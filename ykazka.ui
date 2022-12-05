@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>455</width>
-    <height>357</height>
+    <width>452</width>
+    <height>363</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -61,7 +61,7 @@
      <string>%p%</string>
     </property>
    </widget>
-   <widget class="QLabel" name="connect">
+   <widget class="QLabel" name="connectLabel">
     <property name="geometry">
      <rect>
       <x>260</x>
@@ -79,7 +79,7 @@
      <string>Not connected</string>
     </property>
    </widget>
-   <widget class="QLabel" name="Sensitivity">
+   <widget class="QLabel" name="SensitivityLabel">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -110,7 +110,7 @@
      <string>Apply</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="comPorts">
+   <widget class="QComboBox" name="comPortsList">
     <property name="geometry">
      <rect>
       <x>360</x>
@@ -133,7 +133,7 @@
      <enum>Qt::Vertical</enum>
     </property>
    </widget>
-   <widget class="QLabel" name="Condition">
+   <widget class="QLabel" name="ConditionLabel">
     <property name="geometry">
      <rect>
       <x>310</x>
@@ -151,7 +151,7 @@
      <string>Condition</string>
     </property>
    </widget>
-   <widget class="QLabel" name="leftBtnCond">
+   <widget class="QLabel" name="leftLabel">
     <property name="geometry">
      <rect>
       <x>280</x>
@@ -176,7 +176,7 @@ border-color: rgb(0, 0, 0);</string>
      <number>4</number>
     </property>
    </widget>
-   <widget class="QLabel" name="label_6">
+   <widget class="QLabel" name="rightLabel">
     <property name="geometry">
      <rect>
       <x>380</x>
@@ -234,7 +234,7 @@ border-color: rgb(0, 0, 0);</string>
      </font>
     </property>
     <property name="minimum">
-     <number>0</number>
+     <number>1</number>
     </property>
     <property name="maximum">
      <number>15</number>
@@ -282,7 +282,7 @@ border-color: rgb(0, 0, 0);</string>
      <string>100%</string>
     </property>
    </widget>
-   <widget class="QTextBrowser" name="output">
+   <widget class="QTextBrowser" name="outputText">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -299,7 +299,7 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
-   <widget class="QLabel" name="dX">
+   <widget class="QLabel" name="dXLabel">
     <property name="geometry">
      <rect>
       <x>280</x>
@@ -312,7 +312,7 @@ p, li { white-space: pre-wrap; }
      <string>Dx</string>
     </property>
    </widget>
-   <widget class="QLabel" name="dY">
+   <widget class="QLabel" name="dYLabel">
     <property name="geometry">
      <rect>
       <x>280</x>
@@ -357,7 +357,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>455</width>
+     <width>452</width>
      <height>21</height>
     </rect>
    </property>
