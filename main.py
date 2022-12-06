@@ -1,49 +1,125 @@
 import sys
 import serial.tools.list_ports
-import time
+
+from PyQt5.QtCore import QSize, QTimer
+
 from PyQt5.QtWidgets import QApplication, QMainWindow
+
 from PyQt5 import QtWidgets
+
 from Ui_ykazka import Ui_Ykazka
+
+
 
 class AppPult(QMainWindow, Ui_Ykazka):
     
+    ITERATIONS: int = 100
+
     sensitivity: int = 1
-    """min 1, max 100"""
+    
+    currentPort = None
     
     
+
     def __init__(self):
+
         super().__init__()
+
         self.setupUi(self)
         
-        # привязка событий
-        self.sensitivitySlider.valueChanged.connect(self.sensitivity_set)
-        
-        self.applyBtn.clicked.connect(self.apply_btn_clicked)
-        
-        self.connectBtn.clicked.connect(self.connect_btn_clicked)
 
-        self.comPortsList.view().pressed.connect(self.apply_btn_clicked)
+        """привязка событий"""
+
+        self.sensitivitySlider.valueChanged.connect(self.sensitivity_set_event)
+        
+
+        self.applyBtn.clicked.connect(self.apply_btn_event)
+        
+
+        self.connectBtn.clicked.connect(self.connect_btn_event)
 
         self.comPortsList.mousePressEvent = self.com_ports_update
-        
-        self.add_com_ports()
+
+        self.connectBtn.clicked.connect(self.connect_event)
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(1)
+        self.timer.timeout.connect(self.x)
+        self.timer.start()
 
 
-    # события
-    def sensitivity_set(self, value):
+    """методы"""
+    def write_to_console(self, message):
+        self.outputText.append(str(message))
+
+
+    def loop(self):
+        if self.currentPort is None:
+            return
+
+
+    """события"""
+    def connect_event(self):
+
+        comPort = self.comPortsList.currentText()
+        self.connectLabel.setText("Подключение...")
+
+
+        if comPort[:-1] != "COM":
+            self.write_to_console("Неверно выбран порт")
+            self.connectLabel.setText("Нет подключения")
+            return
+
+
+        connected = False
+        for iter in range(1, self.ITERATIONS + 1):
+            self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
+        self.progressBar.setValue(0)
+
+
+        if connected:
+            self.currentPort = comPort
+            self.connectLabel.setText(f"Подключено к {self.currentPort}")
+            self.write_to_console(f"Подключено к {self.currentPort}")
+        else:
+            self.write_to_console("Неверно выбран порт")
+            self.connectLabel.setText("Нет подключения")
+
+
+    def sensitivity_set_event(self, value):
         self.sensitivity = value
         self.SensitivityValue.setText(f"{self.sensitivity}%")
         
 
-    def com_ports_update(self, v):
-        print(v)
+    def com_ports_change(self, value):
+        self.write_to_console(value)
 
 
-    def connect_btn_clicked(self):
-        pass
+    def com_ports_update(self, *args):
+
+        comPorts = serial.tools.list_ports.comports()
+
+        self.comPortsList.clear()
+
+        for port in comPorts:
+            self.comPortsList.addItem(str(port.device), str(port.device))
+
+        self.comPortsList.showPopup()
 
 
-    def apply_btn_clicked(self, *args):
+    def connect_btn_event(self):
+        
+        for i in range(100):
+
+            self.progressBar.setValue(i + 1)
+
+            QTimer.singleShot(100, lambda *args: None)
+        
+        self.progressBar.setValue(0)
+
+
+    def apply_btn_event(self, *args):
+
         self.outputText.append("OK")
 
         
@@ -54,17 +130,24 @@ class AppPult(QMainWindow, Ui_Ykazka):
         
 
 
+
 def main():
+
     app = QApplication(sys.argv)
     
+
     mainWindow = AppPult()
+
 
     mainWindow.show()
     
+
     sys.exit(app.exec_())
+
 
 
 
 if __name__ == "__main__":
     main()
+
 
