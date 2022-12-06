@@ -9,6 +9,10 @@ from PyQt5 import QtWidgets
 
 from Ui_ykazka import Ui_Ykazka
 
+import mouse
+# import pyautogui as pag
+# pag.PAUSE = 0.01
+# pag.FAILSAFE = False
 
 
 class AppPult(QMainWindow, Ui_Ykazka):
@@ -21,7 +25,11 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
     serialPort = None
     
+    btnBarrier = 250
     
+    leftBtnI = 1010
+    rightBtnI = 1010
+
     def __init__(self):
 
         super().__init__()
@@ -33,12 +41,8 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
         self.sensitivitySlider.valueChanged.connect(self.sensitivity_set_event)
         
-
         self.applyBtn.clicked.connect(self.apply_btn_event)
         
-
-        self.connectBtn.clicked.connect(self.connect_btn_event)
-
         self.comPortsList.mousePressEvent = self.com_ports_update
 
         self.connectBtn.clicked.connect(self.connect_event)
@@ -58,10 +62,43 @@ class AppPult(QMainWindow, Ui_Ykazka):
         if self.currentPort is not None:
             try:
                 request = self.serialPort.readline().decode("utf-8")
+
+                request = list(map(float, request[1:].split()))
             except Exception as e:
                 return
-            self.write_to_console(request)
+            
+            if len(request) != 5:
+                return
                 
+            self.write_to_console(request)
+
+
+            # if request[4] < self.btnBarrier and :
+            #     mouse.press(button="left")
+            # else:
+            #     mouse.release(button="left")
+
+
+            # self.leftBtnI = request[4]
+            # self.rightBtnI = request[3]
+            # left btn
+
+            # right btn
+
+            # if request[3] > self.btnBarrier and not self.leftBtn:
+            #     pag.mouseUp(button="left")
+            #     self.leftLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
+            # else:
+            #     self.leftLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
+            #     pag.mouseDown(button="left")
+
+            # self.leftBtn = request[3] > self.btnBarrier
+
+            # if request[4] > self.btnBarrier:
+            #     self.rightLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
+            # else:
+            #     self.rightLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
+            #     pag.click(button="left")
 
 
     """события"""
@@ -78,7 +115,7 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
 
         connected = False
-        connectedPort = serial.Serial(comPort)
+        connectedPort = serial.Serial(comPort, 115200)
         for iter in range(1, self.ITERATIONS + 1):
 
             try:
@@ -146,11 +183,6 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
         
         
-        
-        
-
-        
-
 
 
 def main():
