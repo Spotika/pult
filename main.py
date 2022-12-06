@@ -13,14 +13,15 @@ from Ui_ykazka import Ui_Ykazka
 
 class AppPult(QMainWindow, Ui_Ykazka):
     
-    ITERATIONS: int = 100
+    ITERATIONS: int = 1000
 
     sensitivity: int = 1
     
     currentPort = None
-    
-    
 
+    serialPort = None
+    
+    
     def __init__(self):
 
         super().__init__()
@@ -44,7 +45,7 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
         self.timer = QTimer(self)
         self.timer.setInterval(1)
-        self.timer.timeout.connect(self.x)
+        self.timer.timeout.connect(self.iter_pult_work)
         self.timer.start()
 
 
@@ -53,9 +54,14 @@ class AppPult(QMainWindow, Ui_Ykazka):
         self.outputText.append(str(message))
 
 
-    def loop(self):
-        if self.currentPort is None:
-            return
+    def iter_pult_work(self):
+        if self.currentPort is not None:
+            try:
+                request = self.serialPort.readline().decode("utf-8")
+            except Exception as e:
+                return
+            self.write_to_console(request)
+                
 
 
     """события"""
@@ -72,8 +78,21 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
 
         connected = False
+        connectedPort = serial.Serial(comPort)
         for iter in range(1, self.ITERATIONS + 1):
+
+            try:
+                request = connectedPort.readline().decode("utf-8")
+            except Exception as e:
+                continue
+
+            if "O" in request:
+                connected = True
+                break
+
             self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
+
+        self.progressBar.setValue(100)
         self.progressBar.setValue(0)
 
 
@@ -81,6 +100,7 @@ class AppPult(QMainWindow, Ui_Ykazka):
             self.currentPort = comPort
             self.connectLabel.setText(f"Подключено к {self.currentPort}")
             self.write_to_console(f"Подключено к {self.currentPort}")
+            self.serialPort = connectedPort
         else:
             self.write_to_console("Неверно выбран порт")
             self.connectLabel.setText("Нет подключения")
@@ -100,6 +120,8 @@ class AppPult(QMainWindow, Ui_Ykazka):
         comPorts = serial.tools.list_ports.comports()
 
         self.comPortsList.clear()
+
+        self.comPortsList.showPopup()
 
         for port in comPorts:
             self.comPortsList.addItem(str(port.device), str(port.device))
