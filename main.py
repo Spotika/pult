@@ -10,14 +10,14 @@ from PyQt5 import QtWidgets
 from Ui_ykazka import Ui_Ykazka
 
 import mouse
-# import pyautogui as pag
-# pag.PAUSE = 0.01
-# pag.FAILSAFE = False
+import pyautogui as pag
+pag.PAUSE = 0
+pag.FAILSAFE = True
 
 
 class AppPult(QMainWindow, Ui_Ykazka):
     
-    ITERATIONS: int = 1000
+    ITERATIONS: int = 100
 
     sensitivity: int = 1
     
@@ -25,10 +25,10 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
     serialPort = None
     
-    btnBarrier = 250
-    
-    leftBtnI = 1010
-    rightBtnI = 1010
+    dx, dy = 0, 0
+
+    btnL = 0
+    btnR = 0
 
     def __init__(self):
 
@@ -71,7 +71,30 @@ class AppPult(QMainWindow, Ui_Ykazka):
                 return
                 
             self.write_to_console(request)
+            x, y = request[0], request[1]
 
+            pag.move((x - self.dx)*50*self.sensitivitySlider.value(), -(y - self.dy)*50*self.sensitivitySlider.value(), 0.1)
+
+            self.dy, self.dx = y, x
+
+            # left btn
+            if self.btnL != round(request[3]) and self.btnL == 0:
+                pag.mouseDown(button="left")
+            elif self.btnL != round(request[3]) and self.btnL == 1:
+                pag.mouseUp(button="left")
+
+            # right btn
+            if self.btnR != round(request[4]) and self.btnR == 0:
+                pag.mouseDown(button="right")
+            elif self.btnR != round(request[4]) and self.btnR == 1:
+                pag.mouseUp(button="right")
+
+
+            self.btnL = round(request[3])
+            self.btnR = round(request[4])
+            # self.write_to_console(f"{(self.deltaAlpha - request[0]) * self.sensitivitySlider.value()}")
+
+            # self.dXLabel.setText(f"{(self.deltaAlpha - request[0]) * self.sensitivitySlider.value()}")
 
             # if request[4] < self.btnBarrier and :
             #     mouse.press(button="left")
@@ -79,31 +102,11 @@ class AppPult(QMainWindow, Ui_Ykazka):
             #     mouse.release(button="left")
 
 
-            # self.leftBtnI = request[4]
-            # self.rightBtnI = request[3]
-            # left btn
 
-            # right btn
-
-            # if request[3] > self.btnBarrier and not self.leftBtn:
-            #     pag.mouseUp(button="left")
-            #     self.leftLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
-            # else:
-            #     self.leftLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
-            #     pag.mouseDown(button="left")
-
-            # self.leftBtn = request[3] > self.btnBarrier
-
-            # if request[4] > self.btnBarrier:
-            #     self.rightLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
-            # else:
-            #     self.rightLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
-            #     pag.click(button="left")
 
 
     """события"""
     def connect_event(self):
-
         comPort = self.comPortsList.currentText()
         self.connectLabel.setText("Подключение...")
 
@@ -114,20 +117,23 @@ class AppPult(QMainWindow, Ui_Ykazka):
             return
 
 
+        print("connecting")
         connected = False
         connectedPort = serial.Serial(comPort, 115200)
+        print("connected")
         for iter in range(1, self.ITERATIONS + 1):
 
             try:
                 request = connectedPort.readline().decode("utf-8")
             except Exception as e:
+                print(e)
                 continue
 
             if "O" in request:
                 connected = True
                 break
-
-            self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
+            # print(iter)
+            # self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
 
         self.progressBar.setValue(100)
         self.progressBar.setValue(0)
@@ -203,5 +209,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
