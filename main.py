@@ -17,7 +17,7 @@ pag.FAILSAFE = True
 
 class AppPult(QMainWindow, Ui_Ykazka):
     
-    ITERATIONS: int = 100
+    ITERATIONS: int = 1000
 
     sensitivity: int = 1
     
@@ -25,10 +25,10 @@ class AppPult(QMainWindow, Ui_Ykazka):
 
     serialPort = None
     
-    dx, dy = 0, 0
-
-    btnL = 0
-    btnR = 0
+    btnBarrier = 250
+    
+    leftBtnI = 1010
+    rightBtnI = 1010
 
     def __init__(self):
 
@@ -102,11 +102,31 @@ class AppPult(QMainWindow, Ui_Ykazka):
             #     mouse.release(button="left")
 
 
+            # self.leftBtnI = request[4]
+            # self.rightBtnI = request[3]
+            # left btn
 
+            # right btn
+
+            # if request[3] > self.btnBarrier and not self.leftBtn:
+            #     pag.mouseUp(button="left")
+            #     self.leftLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
+            # else:
+            #     self.leftLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
+            #     pag.mouseDown(button="left")
+
+            # self.leftBtn = request[3] > self.btnBarrier
+
+            # if request[4] > self.btnBarrier:
+            #     self.rightLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
+            # else:
+            #     self.rightLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
+            #     pag.click(button="left")
 
 
     """события"""
     def connect_event(self):
+
         comPort = self.comPortsList.currentText()
         self.connectLabel.setText("Подключение...")
 
@@ -117,23 +137,20 @@ class AppPult(QMainWindow, Ui_Ykazka):
             return
 
 
-        print("connecting")
         connected = False
         connectedPort = serial.Serial(comPort, 115200)
-        print("connected")
         for iter in range(1, self.ITERATIONS + 1):
 
             try:
                 request = connectedPort.readline().decode("utf-8")
             except Exception as e:
-                print(e)
                 continue
 
             if "O" in request:
                 connected = True
                 break
-            # print(iter)
-            # self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
+
+            self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
 
         self.progressBar.setValue(100)
         self.progressBar.setValue(0)
