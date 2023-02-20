@@ -1,229 +1,137 @@
-import sys
+import serial
 import serial.tools.list_ports
-
-from PyQt5.QtCore import QSize, QTimer
-
-from PyQt5.QtWidgets import QApplication, QMainWindow
-
-from PyQt5 import QtWidgets
-
-from Ui_ykazka import Ui_Ykazka
-
-import mouse
-import pyautogui as pag
-pag.PAUSE = 0
-pag.FAILSAFE = True
+import macros
+import pyautogui
+import time
 
 
-class AppPult(QMainWindow, Ui_Ykazka):
-    
-    ITERATIONS: int = 1000
+pyautogui.FAILSAFE = False
 
-    sensitivity: int = 1
-    
-    currentPort = None
+pyautogui.PAUSE = 0
 
-    serialPort = None
-    
-    btnBarrier = 250
-    
-    leftBtnI = 1010
-    rightBtnI = 1010
+
+class SerialInterface:
+    WELCOME_TEXT = """Welcome"""
+
+    HELP_TEXT = """
+    None
+    """
+
+    DELAY = 1 / 60
+
+    class Utility:
+
+        NUM_OF_ITER = 10
+        ITER_DELAY = 0.3
+
+        @classmethod
+        def identification(cls):
+            for port in serial.tools.list_ports.comports():
+                print("Trying port", port.name + "...")
+
+                connectedSerial = serial.Serial(port.name, 115200, timeout=1)
+                while connectedSerial is None:
+                    ...
+                for _ in range(cls.NUM_OF_ITER):
+
+                    data = connectedSerial.readline().decode("utf-8")
+                    try:
+                        if data[0] == "O":
+                            return connectedSerial
+                    except IndexError:
+                        ...
+            return None
+
+    mainRun = True
+    serialRun = False
+    connectedPort = None
+
+    buttonsState = [0, 0, 0, 0, 0, 0]
+    prevX, prevY = 0, 0
 
     def __init__(self):
+        print(self.WELCOME_TEXT)
 
-        super().__init__()
-
-        self.setupUi(self)
-        
-
-        """привязка событий"""
-
-        self.sensitivitySlider.valueChanged.connect(self.sensitivity_set_event)
-        
-        self.applyBtn.clicked.connect(self.apply_btn_event)
-        
-        self.comPortsList.mousePressEvent = self.com_ports_update
-
-        self.connectBtn.clicked.connect(self.connect_event)
-
-        self.timer = QTimer(self)
-        self.timer.setInterval(1)
-        self.timer.timeout.connect(self.iter_pult_work)
-        self.timer.start()
-
-
-    """методы"""
-    def write_to_console(self, message):
-        self.outputText.append(str(message))
-
-
-    def iter_pult_work(self):
-        if self.currentPort is not None:
-            try:
-                request = self.serialPort.readline().decode("utf-8")
-
-                request = list(map(float, request[1:].split()))
-            except Exception as e:
-                return
-            
-            if len(request) != 5:
-                return
-                
-            self.write_to_console(request)
-            x, y = request[0], request[1]
-
-            pag.move((x - self.dx)*50*self.sensitivitySlider.value(), -(y - self.dy)*50*self.sensitivitySlider.value(), 0.1)
-
-            self.dy, self.dx = y, x
-
-            # left btn
-            if self.btnL != round(request[3]) and self.btnL == 0:
-                pag.mouseDown(button="left")
-            elif self.btnL != round(request[3]) and self.btnL == 1:
-                pag.mouseUp(button="left")
-
-            # right btn
-            if self.btnR != round(request[4]) and self.btnR == 0:
-                pag.mouseDown(button="right")
-            elif self.btnR != round(request[4]) and self.btnR == 1:
-                pag.mouseUp(button="right")
-
-
-            self.btnL = round(request[3])
-            self.btnR = round(request[4])
-            # self.write_to_console(f"{(self.deltaAlpha - request[0]) * self.sensitivitySlider.value()}")
-
-            # self.dXLabel.setText(f"{(self.deltaAlpha - request[0]) * self.sensitivitySlider.value()}")
-
-            # if request[4] < self.btnBarrier and :
-            #     mouse.press(button="left")
-            # else:
-            #     mouse.release(button="left")
-
-
-            # self.leftBtnI = request[4]
-            # self.rightBtnI = request[3]
-            # left btn
-
-            # right btn
-
-            # if request[3] > self.btnBarrier and not self.leftBtn:
-            #     pag.mouseUp(button="left")
-            #     self.leftLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
-            # else:
-            #     self.leftLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
-            #     pag.mouseDown(button="left")
-
-            # self.leftBtn = request[3] > self.btnBarrier
-
-            # if request[4] > self.btnBarrier:
-            #     self.rightLabel.setStyleSheet("background-color: rgb(209, 209, 209);\n")
-            # else:
-            #     self.rightLabel.setStyleSheet("background-color: rgb(100, 100, 100);\n")
-            #     pag.click(button="left")
-
-
-    """события"""
-    def connect_event(self):
-
-        comPort = self.comPortsList.currentText()
-        self.connectLabel.setText("Подключение...")
-
-
-        if comPort[:-1] != "COM":
-            self.write_to_console("Неверно выбран порт")
-            self.connectLabel.setText("Нет подключения")
+    def serial_loop(self):
+        self.serialRun = True
+        if self.connectedPort is None:
+            connectedPort = self.connect()
+        else:
+            connectedPort = self.connectedPort
+        if connectedPort is None:
+            print("Connection error")
             return
 
+        self.connectedPort = connectedPort
+        print("Connected")
 
-        connected = False
-        connectedPort = serial.Serial(comPort, 115200)
-        for iter in range(1, self.ITERATIONS + 1):
+        try:
+            while self.serialRun:
+                try:
 
+                    receivedData = connectedPort.readline().decode("utf-8")[1:].split()
+
+                    # mpu
+                    mpu = tuple(map(float, receivedData[:2]))
+
+                    # buttons
+                    btnData = receivedData[-1]
+
+                    macros.AlgoCore.tick(mpu, btnData)
+
+
+                except Exception:
+                    ...
+
+        except KeyboardInterrupt:
+            self.serialRun = False
+
+    def main_loop(self):
+        while self.mainRun:
             try:
-                request = connectedPort.readline().decode("utf-8")
-            except Exception as e:
-                continue
+                command = input(">>> ")
+            except UnicodeDecodeError:
+                command = [""]
 
-            if "O" in request:
-                connected = True
-                break
+            match command.split():
+                case [""]:
+                    ...
 
-            self.progressBar.setValue(round((iter/self.ITERATIONS) * 100))
+                case ["run"]:
+                    self.serial_loop()
 
-        self.progressBar.setValue(100)
-        self.progressBar.setValue(0)
+                case ["help"]:
+                    print(self.HELP_TEXT)
 
+                case ["exit"]:
+                    self.mainRun = False
 
-        if connected:
-            self.currentPort = comPort
-            self.connectLabel.setText(f"Подключено к {self.currentPort}")
-            self.write_to_console(f"Подключено к {self.currentPort}")
-            self.serialPort = connectedPort
-        else:
-            self.write_to_console("Неверно выбран порт")
-            self.connectLabel.setText("Нет подключения")
+                case ["sensitive", value]:
+                    if value.isnumeric():
+                        print("Sensitive set to", value)
+                        macros.Data.sensitive = int(value)
 
+                case ["text", text]:
+                    if self.connectedPort is None:
+                        self.connectedPort = self.connect()
+                    if self.connectedPort is None:
+                        print("Connection error")
+                    else:
+                        self.connectedPort.write("C!".encode("utf-8"))
+                        time.sleep(1)
+                        self.connectedPort.write(f"W{text}!".encode("utf-8"))
 
-    def sensitivity_set_event(self, value):
-        self.sensitivity = value
-        self.SensitivityValue.setText(f"{self.sensitivity}%")
-        
+                case [unknown]:
+                    print(f"'{unknown}' is not a command, try 'help', to see a list of commands")
 
-    def com_ports_change(self, value):
-        self.write_to_console(value)
-
-
-    def com_ports_update(self, *args):
-
-        comPorts = serial.tools.list_ports.comports()
-
-        self.comPortsList.clear()
-
-        self.comPortsList.showPopup()
-
-        for port in comPorts:
-            self.comPortsList.addItem(str(port.device), str(port.device))
-
-        self.comPortsList.showPopup()
-
-
-    def connect_btn_event(self):
-        
-        for i in range(100):
-
-            self.progressBar.setValue(i + 1)
-
-            QTimer.singleShot(100, lambda *args: None)
-        
-        self.progressBar.setValue(0)
-
-
-    def apply_btn_event(self, *args):
-
-        self.outputText.append("OK")
-
-        
-        
+    def connect(self):
+        return self.Utility.identification()
 
 
 def main():
-
-    app = QApplication(sys.argv)
-    
-
-    mainWindow = AppPult()
-
-
-    mainWindow.show()
-    
-
-    sys.exit(app.exec_())
-
-
+    app = SerialInterface()
+    app.main_loop()
 
 
 if __name__ == "__main__":
     main()
-
